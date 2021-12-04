@@ -32,6 +32,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , split
   default-language: Haskell2010
 
 executable EpiSimdemics-exe
@@ -44,6 +45,7 @@ executable EpiSimdemics-exe
   build-depends:
       EpiSimdemics
     , base >=4.7 && <5
+    , split
   default-language: Haskell2010
 
 test-suite EpiSimdemics-test
@@ -57,4 +59,5 @@ test-suite EpiSimdemics-test
   build-depends:
       EpiSimdemics
     , base >=4.7 && <5
+    , split
   default-language: Haskell2010

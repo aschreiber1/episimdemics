@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, sample
 import random
 import csv
 
@@ -9,6 +9,7 @@ MAX_LOCATIONS_PER_DAY = 5
 MAX_LENGTH = 120
 START_TIME = 360
 END_TIME = 1320
+INITIAL_CASES = 2
 
 def get_non_trivial_wait_time():
     return fast_rand_int(0,MAX_LENGTH)
@@ -47,5 +48,16 @@ def write_output_to_csv(dataset):
         writer.writerow(header)
         writer.writerows(dataset)
 
+def write_initial_sick():
+    initial_sick = set(sample(range(NUM_PEOPLE), INITIAL_CASES))
+    header = ('Person', 'Infected')
+    with open('people.csv', 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        for person in range(NUM_PEOPLE):
+            sick = 1 if person in initial_sick else 0
+            writer.writerow((person,sick))
+
 dataset = generate_dataset()
 write_output_to_csv(dataset)
+write_initial_sick()
