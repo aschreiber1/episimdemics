@@ -1,4 +1,4 @@
-from random import randint, sample
+from random import randint, sample, uniform
 import random
 import csv
 
@@ -27,9 +27,10 @@ def generate_daily_activities():
         location = fast_rand_int(1,NUM_LOCATIONS) # random location
         duration = fast_rand_int(1,MAX_LENGTH) # random, non trivial, duratoin
         finish_time = current_time + duration
+        random_chance = uniform(0,1)
         if finish_time > END_TIME:
             break
-        out.append((location, current_time, finish_time))
+        out.append((location, current_time, finish_time, random_chance))
         current_time = finish_time + get_non_trivial_wait_time()
     return out
 
@@ -37,12 +38,12 @@ def generate_dataset():
     out = []
     for day in range(NUM_DAYS):
         for person in range(NUM_PEOPLE):
-            for location,start_time,finish_time in generate_daily_activities():
-                out.append((day, person, location, start_time, finish_time))
+            for location,start_time,finish_time,chance in generate_daily_activities():
+                out.append((day, person, location, start_time, finish_time, chance))
     return out
 
 def write_output_to_csv(dataset):
-    header = ('Day', 'Person', 'Location', 'StartTime', 'FinishTime')
+    header = ('Day', 'Person', 'Location', 'StartTime', 'FinishTime', 'Chance')
     with open('dataset.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(header)
