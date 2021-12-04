@@ -28,13 +28,14 @@ transitionInfectious p
 transitionHState :: Person -> Person
 transitionHState p
     | state == Infected = transitionInfected p
-    | state == Uninfected = transitionInfectious p
+    | state == Infectious = transitionInfectious p
     | otherwise = p
   where state = hState p
 
+-- initial state of infectious is -1 so that we can update states on first day
 createPerson :: [String] -> Person
 createPerson [x,"0"] = Person {pid = read x, hState = Uninfected, hStateDays = 0}
-createPerson [x,_] = Person {pid = read x, hState = Infectious, hStateDays = 0}
+createPerson [x,_] = Person {pid = read x, hState = Infectious, hStateDays = -1}
 createPerson _ = error "wrong arguments"
 
 initalizePeople :: IO [Person]
@@ -47,7 +48,9 @@ initalizePeople = do
 -- This is the heart of the program, it processes the events for a day 
 -- and updates the health status
 processDailyEvents :: [Person] -> Int -> [Person]
-processDailyEvents p _ = p
+processDailyEvents p _ = do
+  let transitioned = map transitionHState p
+  transitioned
 
 -- For each day, process daily events and update the health states
 -- This is basically the core "loop" of the program that processes the events
