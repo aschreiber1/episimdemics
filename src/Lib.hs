@@ -51,13 +51,12 @@ createPerson [x,"0"] = Person {pid = read x, hState = Uninfected, hStateDays = 0
 createPerson [x,_] = Person {pid = read x, hState = Infectious, hStateDays = -1}
 createPerson _ = error "wrong arguments"
 
-initalizePeople :: IO (Map.Map Int Person)
+initalizePeople :: IO [Person]
 initalizePeople = do
   contents <- readFile "people.csv"
   let records = tail $ words contents
   let parsed = map (splitOn ",") records
-  let people = map createPerson parsed
-  return $ Map.fromList $ map (\x -> (pid x, x)) people 
+  return $ map createPerson parsed
 
 createEvent :: [String] -> Event
 createEvent [day,person,loc,start,end, chance]
@@ -92,12 +91,12 @@ simulateEvent numPeople time percentChance = percentChance < echance
 -- simulateEvent _ _ _ = False 
 
 -- Process an event, if someone is not unifected, they cant get sick, so ignore them
-processEvent :: Event -> Map.Map Int Person -> Map.Map Int [Event] -> Bool
-processEvent event people locMap
+processEvent :: Event -> Map.Map Int HealthState -> Map.Map Int [Event] -> Bool
+processEvent event hstates locMap
   | null overlap = False
   | state == Uninfected = and results 
   | otherwise = False
-  where state = hState $ people Map.! ePid event
+  where state = hstates Map.! ePid event
         results = map (\(x,y) -> simulateEvent x y echance) $ Map.toList overlap
         overlap = findOverlappingEvents event locMap
         echance = chance event        
@@ -111,20 +110,23 @@ processEventResults p rmap = case results of
 
 -- This is the heart of the program, it processes the events for a day 
 -- and updates the health status
-processDailyEvents :: Map.Map Int Person -> Map.Map Int (Map.Map Int [Event]) -> Int -> Map.Map Int Person
+processDailyEvents :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
 processDailyEvents p emap day = do
   --Step 1, transition events
-  let transitioned = Map.map transitionHState p
+  let transitioned = map transitionHState p
   --Step 2, process all events for a given day
+  let hstates = Map.fromList $ map (\x -> (pid x, hState x)) transitioned
   let locMap = emap Map.! day
   let eventsForDay = Map.foldr (++) [] locMap
-  let eventResults = Map.fromListWith (++) $ map (\x -> (ePid x, [processEvent x p locMap])) eventsForDay
-  Map.map (\x -> processEventResults x eventResults) transitioned
+  let processedEvents = map (\x -> (ePid x, [processEvent x hstates locMap])) eventsForDay
+  let eventResults = Map.fromListWith (++) processedEvents
+  --Step 3, process all event results
+  map (\x -> processEventResults x eventResults) transitioned
 
 -- For each day, process daily events and update the health states
 -- This is basically the core "loop" of the program that processes the events
 -- for each day, one by one
-mainFlow :: (Map.Map Int Person, Map.Map Int (Map.Map Int [Event]), Int) -> Map.Map Int Person
+mainFlow :: ([Person], Map.Map Int (Map.Map Int [Event]), Int) -> [Person]
 mainFlow (p, _, 60) = p --haskell does not let you match against variables, so 60 here is the max number of days
 mainFlow (p, m, n) =  mainFlow (processDailyEvents p m n, m, n+1)
 
@@ -134,17 +136,15 @@ wasInfected p
     | otherwise = 1
   where state = hState p
 
-totalInfected :: Map.Map Int Person -> Int
-totalInfected p = sum $ map wasInfected $ Map.elems p
+totalInfected :: [Person] -> Int
+totalInfected p = sum $ map wasInfected p
 
 mainFunc :: IO ()
 mainFunc = do
   initalState <- initalizePeople
-  let initialInfected = totalInfected initalState
-  putStrLn $ "Starting Number of Infected: " ++ show initialInfected
+  putStrLn $ "Starting Number of Infected: " ++ show (totalInfected initalState)
   events <- initalizeEvents
   let eventsMap = createEventsMap events
   let finalState = mainFlow (initalState, eventsMap, 0)
-  let numInfected = totalInfected finalState
-  putStrLn $ "Total Number of Infected: " ++ show numInfected
+  putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
   return ()
