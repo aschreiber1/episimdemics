@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - split
 - containers
+- parallel
 
 library:
   source-dirs: src
@@ -36,6 +37,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -eventlog
+    - -threaded
     dependencies:
     - EpiSimdemics
 
@@ -48,5 +50,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     - -eventlog
+    - -threaded
     dependencies:
     - EpiSimdemics

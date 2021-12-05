@@ -2,7 +2,7 @@ from random import randint, sample, uniform
 import random
 import csv
 
-NUM_PEOPLE = 1000
+NUM_PEOPLE = 10000
 NUM_LOCATIONS = 100
 NUM_DAYS = 60
 MAX_LOCATIONS_PER_DAY = 5

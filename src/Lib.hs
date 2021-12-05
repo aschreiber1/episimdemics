@@ -4,6 +4,7 @@ module Lib
 
 import Data.List.Split ( splitOn )
 import qualified Data.Map as Map
+import Control.Parallel.Strategies(using, parList, rseq)
 
 latencyPeriod :: Int
 latencyPeriod = 2
@@ -56,7 +57,7 @@ initalizePeople = do
   contents <- readFile "people.csv"
   let records = tail $ words contents
   let parsed = map (splitOn ",") records
-  return $ map createPerson parsed
+  return (map createPerson parsed)
 
 createEvent :: [String] -> Event
 createEvent [day,person,loc,start,end, chance]
@@ -67,8 +68,8 @@ initalizeEvents :: IO [Event]
 initalizeEvents = do
   contents <- readFile "dataset.csv"
   let records = tail $ words contents
-  let parsed = map (splitOn ",") records
-  return $ map createEvent parsed
+  let parsed = map (splitOn ",") records 
+  return (map createEvent parsed)
 
 createEventsMap :: [Event] -> Map.Map Int (Map.Map Int [Event])
 createEventsMap xs = Map.map (Map.fromListWith (++) . map (\y -> (loc y, [y]))) nxt
@@ -113,15 +114,16 @@ processEventResults p rmap = case results of
 processDailyEvents :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
 processDailyEvents p emap day = do
   --Step 1, transition events
-  let transitioned = map transitionHState p
+  let transitioned = map transitionHState p `using` parList rseq
   --Step 2, process all events for a given day
-  let hstates = Map.fromList $ map (\x -> (pid x, hState x)) transitioned
+  let hstateslist = map (\x -> (pid x, hState x)) transitioned `using` parList rseq
+  let hstates = Map.fromList hstateslist
   let locMap = emap Map.! day
   let eventsForDay = Map.foldr (++) [] locMap
-  let processedEvents = map (\x -> (ePid x, [processEvent x hstates locMap])) eventsForDay
+  let processedEvents = map (\x -> (ePid x, [processEvent x hstates locMap])) eventsForDay `using` parList rseq
   let eventResults = Map.fromListWith (++) processedEvents
   --Step 3, process all event results
-  map (\x -> processEventResults x eventResults) transitioned
+  map (\x -> processEventResults x eventResults) transitioned `using` parList rseq
 
 -- For each day, process daily events and update the health states
 -- This is basically the core "loop" of the program that processes the events
