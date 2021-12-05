@@ -42,7 +42,7 @@ executable EpiSimdemics-exe
       Paths_EpiSimdemics
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -eventlog
   build-depends:
       EpiSimdemics
     , base >=4.7 && <5
@@ -57,7 +57,7 @@ test-suite EpiSimdemics-test
       Paths_EpiSimdemics
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -eventlog
   build-depends:
       EpiSimdemics
     , base >=4.7 && <5
