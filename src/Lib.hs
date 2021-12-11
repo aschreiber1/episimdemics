@@ -252,9 +252,6 @@ mainFuncV2 = do
   putStrLn  "Creating Loc Map"
   let locMap = createLocMap eventsMap
   putStrLn "Running Main flow"
-
-
-  
   let finalState = mainFlow2 (initalState, eventsMap, locMap, 0)
   putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
   return ()
