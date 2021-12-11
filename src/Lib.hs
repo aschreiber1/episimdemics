@@ -252,6 +252,9 @@ mainFuncV2 = do
   putStrLn  "Creating Loc Map"
   let locMap = createLocMap eventsMap
   putStrLn "Running Main flow"
+
+
+  
   let finalState = mainFlow2 (initalState, eventsMap, locMap, 0)
   putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
   return ()
@@ -264,8 +267,10 @@ mainFuncV3 = do
   events <- initalizeEvents
   putStrLn "Creating Events Map"
   let eventsMap = createEventsMap2 events
+  print $ head $ eventsMap Map.! 0
   putStrLn  "Creating Loc Map"
   let locMap = createLocMap eventsMap
+  print $ head $ (locMap Map.! 0) Map.! 1
   putStrLn "Running Main flow"
   let finalState = mainFlow3 (chunksOf chunkSize initalState, eventsMap, locMap, 0)
   putStrLn $ "Total Number of Infected: " ++ show (totalInfected (concat finalState))
