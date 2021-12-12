@@ -38,6 +38,7 @@ executables:
     - -with-rtsopts=-N
     - -eventlog
     - -threaded
+    - -Wall
     dependencies:
     - EpiSimdemics
 
