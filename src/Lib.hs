@@ -21,9 +21,9 @@ transmissibility = 0.1
 chunkSize :: Int
 chunkSize = 15
 
--- support versions of different parallel functions
-parallelVersion :: Int
-parallelVersion = 0
+-- -- support versions of different parallel functions
+-- parallelVersion :: Int
+-- parallelVersion = 0
 
 rsp :: Float
 rsp = infectivity*susceptibility*transmissibility
@@ -79,9 +79,9 @@ initalizeEvents = do
   let parsed = map (splitOn ",") records
   return (map createEvent parsed)
 
-createEventsMap :: [Event] -> Map.Map Int (Map.Map Int [Event])
-createEventsMap xs = Map.map (Map.fromListWith (++) . map (\y -> (loc y, [y]))) nxt
-  where nxt = Map.fromListWith (++) $ map (\x -> (day x, [x])) xs
+-- createEventsMap :: [Event] -> Map.Map Int (Map.Map Int [Event])
+-- createEventsMap xs = Map.map (Map.fromListWith (++) . map (\y -> (loc y, [y]))) nxt
+--   where nxt = Map.fromListWith (++) $ map (\x -> (day x, [x])) xs
 
 createEventsMap2 :: [Event] -> Map.Map Int [Event]
 createEventsMap2 xs = Map.fromListWith (++) $ map (\x -> (day x, [x])) xs
@@ -105,16 +105,16 @@ simulateEvent numPeople time percentChance = percentChance < echance
         pepFloat = fromIntegral numPeople
 -- simulateEvent _ _ _ = False 
 
--- Process an event, if someone is not unifected, they cant get sick, so ignore them
-processEvent :: Event -> Map.Map Int HealthState -> Map.Map Int [Event] -> Bool
-processEvent event hstates locMap
-  | null overlap = False
-  | state == Uninfected = and results
-  | otherwise = False
-  where state = hstates Map.! ePid event
-        results = map (\(x,y) -> simulateEvent x y echance) $ Map.toList overlap
-        overlap = findOverlappingEvents event locMap
-        echance = chance event
+-- -- Process an event, if someone is not unifected, they cant get sick, so ignore them
+-- processEvent :: Event -> Map.Map Int HealthState -> Map.Map Int [Event] -> Bool
+-- processEvent event hstates locMap
+--   | null overlap = False
+--   | state == Uninfected = and results
+--   | otherwise = False
+--   where state = hstates Map.! ePid event
+--         results = map (\(x,y) -> simulateEvent x y echance) $ Map.toList overlap
+--         overlap = findOverlappingEvents event locMap
+--         echance = chance event
 
 -- Process an event, we will ignore the result of this if someone is not sick later
 processEvent2 :: Event -> Map.Map Int [Event] -> Bool
@@ -125,44 +125,44 @@ processEvent2 event locMap
         overlap = findOverlappingEvents event locMap
         echance = chance event
 
-processEventResults :: Person -> Map.Map Int [Bool] -> Person
-processEventResults p rmap = case results of
-    Just xs -> if or xs then infected else p
-    Nothing -> p
-  where results = Map.lookup (pid p) rmap
-        infected = Person {pid = pid p, hState = Infected, hStateDays = 0}
+-- processEventResults :: Person -> Map.Map Int [Bool] -> Person
+-- processEventResults p rmap = case results of
+--     Just xs -> if or xs then infected else p
+--     Nothing -> p
+--   where results = Map.lookup (pid p) rmap
+--         infected = Person {pid = pid p, hState = Infected, hStateDays = 0}
 
 processEventResults2 :: Person -> Bool -> Person
 processEventResults2 p infected = if infected then infectedRes else p
   where infectedRes = Person {pid = pid p, hState = Infected, hStateDays = 0}
 
--- This is the heart of the program, it processes the events for a day 
--- and updates the health status
-processDailyEventsBasic :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
-processDailyEventsBasic p emap dayNum = do
-  --Step 1, transition events
-  let transitioned = map transitionHState p `using` parList rseq
-  --Step 2, process all events for a given day
-  let hstateslist = map (\x -> (pid x, hState x)) transitioned `using` parList rseq
-  let hstates = Map.fromList hstateslist
-  let locMap = emap Map.! dayNum
-  let eventsForDay = Map.foldr (++) [] locMap
-  let processedEvents = map (\x -> (ePid x, [processEvent x hstates locMap])) eventsForDay `using` parList rseq
-  let eventResults = Map.fromListWith (++) processedEvents
-  --Step 3, process all event results
-  map (\x -> processEventResults x eventResults) transitioned `using` parList rseq
+-- -- This is the heart of the program, it processes the events for a day 
+-- -- and updates the health status
+-- processDailyEventsBasic :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
+-- processDailyEventsBasic p emap dayNum = do
+--   --Step 1, transition events
+--   let transitioned = map transitionHState p `using` parList rseq
+--   --Step 2, process all events for a given day
+--   let hstateslist = map (\x -> (pid x, hState x)) transitioned `using` parList rseq
+--   let hstates = Map.fromList hstateslist
+--   let locMap = emap Map.! dayNum
+--   let eventsForDay = Map.foldr (++) [] locMap
+--   let processedEvents = map (\x -> (ePid x, [processEvent x hstates locMap])) eventsForDay `using` parList rseq
+--   let eventResults = Map.fromListWith (++) processedEvents
+--   --Step 3, process all event results
+--   map (\x -> processEventResults x eventResults) transitioned `using` parList rseq
 
-processDailyEventsBasic2 :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Map.Map Int [Event] -> Int -> [Person]
-processDailyEventsBasic2 p locMapFull eventMap dayNum = do
-  --Step 1, transition events
-  let transitioned = map transitionHState p `using` parList rseq
-  --Step 2, process all events for a given day
-  let locMap = locMapFull Map.! dayNum
-  let eventsForDay = eventMap Map.! dayNum
-  let processedEvents = map (\x -> (ePid x, processEvent2 x locMap)) eventsForDay `using` parList rseq
-  let changedPeople = Set.fromList $ map fst $ filter snd processedEvents
-  --Step 3, process all event results
-  map (\x -> processEventResults2 x ((hState x == Uninfected) && Set.member (pid x) changedPeople)) transitioned `using` parList rseq
+-- processDailyEventsBasic2 :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Map.Map Int [Event] -> Int -> [Person]
+-- processDailyEventsBasic2 p locMapFull eventMap dayNum = do
+--   --Step 1, transition events
+--   let transitioned = map transitionHState p `using` parList rseq
+--   --Step 2, process all events for a given day
+--   let locMap = locMapFull Map.! dayNum
+--   let eventsForDay = eventMap Map.! dayNum
+--   let processedEvents = map (\x -> (ePid x, processEvent2 x locMap)) eventsForDay `using` parList rseq
+--   let changedPeople = Set.fromList $ map fst $ filter snd processedEvents
+--   --Step 3, process all event results
+--   map (\x -> processEventResults2 x ((hState x == Uninfected) && Set.member (pid x) changedPeople)) transitioned `using` parList rseq
 
 processEventsChunk :: [Event] -> Map.Map Int [Event]-> [Int]
 processEventsChunk events locMap = map fst filtered
@@ -183,40 +183,40 @@ processDailyEventsChunked2 p locMapFull eventMap dayNum = do
   --Step 3, process all event results
   map (\x -> processEventResultChunk x changedPeople) transitioned `using` parList rseq
 
-processDailyEventsChunked :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
-processDailyEventsChunked p emap dayNum = do
-  let pChunked = chunksOf chunkSize p
-  let transitioned = map (map transitionHState) pChunked `using` parList rseq
-  --Step 2, process all events for a given day
-  let hstateslist = map (\x -> map (\y -> (pid y, hState y)) x) transitioned `using` parList rseq
-  let hstates = Map.fromList $ concat hstateslist
-  let locMap = emap Map.! dayNum
-  let eventsForDay = Map.foldr (++) [] locMap
-  let eventsForDayChunked = chunksOf chunkSize eventsForDay
-  let processedEvents = map (\x -> map (\y -> (ePid y, [processEvent y hstates locMap])) x)  eventsForDayChunked `using` parList rseq
-  let eventResults = Map.fromListWith (++) (concat processedEvents)
-  --Step 3, process all event results
-  let out = map (\x -> map (\y -> processEventResults y eventResults) x) transitioned `using` parList rseq
-  concat out
+-- processDailyEventsChunked :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
+-- processDailyEventsChunked p emap dayNum = do
+--   let pChunked = chunksOf chunkSize p
+--   let transitioned = map (map transitionHState) pChunked `using` parList rseq
+--   --Step 2, process all events for a given day
+--   let hstateslist = map (\x -> map (\y -> (pid y, hState y)) x) transitioned `using` parList rseq
+--   let hstates = Map.fromList $ concat hstateslist
+--   let locMap = emap Map.! dayNum
+--   let eventsForDay = Map.foldr (++) [] locMap
+--   let eventsForDayChunked = chunksOf chunkSize eventsForDay
+--   let processedEvents = map (\x -> map (\y -> (ePid y, [processEvent y hstates locMap])) x)  eventsForDayChunked `using` parList rseq
+--   let eventResults = Map.fromListWith (++) (concat processedEvents)
+--   --Step 3, process all event results
+--   let out = map (\x -> map (\y -> processEventResults y eventResults) x) transitioned `using` parList rseq
+--   concat out
 
-processDailyEvents :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
-processDailyEvents p emap dayNum
-  | parallelVersion == 0 = processDailyEventsBasic p emap dayNum
-  | otherwise = processDailyEventsChunked p emap dayNum
+-- processDailyEvents :: [Person] -> Map.Map Int (Map.Map Int [Event]) -> Int -> [Person]
+-- processDailyEvents p emap dayNum
+--   | parallelVersion == 0 = processDailyEventsBasic p emap dayNum
+--   | otherwise = processDailyEventsChunked p emap dayNum
 
--- For each day, process daily events and update the health states
--- This is basically the core "loop" of the program that processes the events
--- for each day, one by one
-mainFlow :: ([Person], Map.Map Int (Map.Map Int [Event]), Int) -> [Person]
-mainFlow (p, _, 60) = p --haskell does not let you match against variables, so 60 here is the max number of days
-mainFlow (p, m, n) =  mainFlow (processDailyEvents p m n, m, n+1)
+-- -- For each day, process daily events and update the health states
+-- -- This is basically the core "loop" of the program that processes the events
+-- -- for each day, one by one
+-- mainFlow :: ([Person], Map.Map Int (Map.Map Int [Event]), Int) -> [Person]
+-- mainFlow (p, _, 60) = p --haskell does not let you match against variables, so 60 here is the max number of days
+-- mainFlow (p, m, n) =  mainFlow (processDailyEvents p m n, m, n+1)
 
--- For each day, process daily events and update the health states
--- This is basically the core "loop" of the program that processes the events
--- for each day, one by one
-mainFlow2 :: ([Person], Map.Map Int [Event], Map.Map Int (Map.Map Int [Event]), Int) -> [Person]
-mainFlow2 (p, _, _, 60) = p --haskell does not let you match against variables, so 60 here is the max number of days
-mainFlow2 (p, eMap, locMap, n) =  mainFlow2 (processDailyEventsBasic2 p locMap eMap n, eMap, locMap, n+1)
+-- -- For each day, process daily events and update the health states
+-- -- This is basically the core "loop" of the program that processes the events
+-- -- for each day, one by one
+-- mainFlow2 :: ([Person], Map.Map Int [Event], Map.Map Int (Map.Map Int [Event]), Int) -> [Person]
+-- mainFlow2 (p, _, _, 60) = p --haskell does not let you match against variables, so 60 here is the max number of days
+-- mainFlow2 (p, eMap, locMap, n) =  mainFlow2 (processDailyEventsBasic2 p locMap eMap n, eMap, locMap, n+1)
 
 mainFlow3 :: ([[Person]], Map.Map Int [Event], Map.Map Int (Map.Map Int [Event]), Int) -> [[Person]]
 mainFlow3 (p, _, _, 60) = p --haskell does not let you match against variables, so 60 here is the max number of days
@@ -231,30 +231,30 @@ wasInfected p
 totalInfected :: [Person] -> Int
 totalInfected p = sum $ map wasInfected p
 
-mainFuncV1 :: IO ()
-mainFuncV1 = do
-  initalState <- initalizePeople
-  putStrLn $ "Starting Number of Infected: " ++ show (totalInfected initalState)
-  events <- initalizeEvents
-  let eventsMap = createEventsMap events
-  let finalState = mainFlow (initalState, eventsMap, 0)
-  putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
-  return ()
+-- mainFuncV1 :: IO ()
+-- mainFuncV1 = do
+--   initalState <- initalizePeople
+--   putStrLn $ "Starting Number of Infected: " ++ show (totalInfected initalState)
+--   events <- initalizeEvents
+--   let eventsMap = createEventsMap events
+--   let finalState = mainFlow (initalState, eventsMap, 0)
+--   putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
+--   return ()
 
-mainFuncV2 :: IO ()
-mainFuncV2 = do
-  putStrLn "Initializing People"
-  initalState <- initalizePeople
-  putStrLn $ "Starting Number of Infected: " ++ show (totalInfected initalState)
-  events <- initalizeEvents
-  putStrLn "Creating Events Map"
-  let eventsMap = createEventsMap2 events
-  putStrLn  "Creating Loc Map"
-  let locMap = createLocMap eventsMap
-  putStrLn "Running Main flow"
-  let finalState = mainFlow2 (initalState, eventsMap, locMap, 0)
-  putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
-  return ()
+-- mainFuncV2 :: IO ()
+-- mainFuncV2 = do
+--   putStrLn "Initializing People"
+--   initalState <- initalizePeople
+--   putStrLn $ "Starting Number of Infected: " ++ show (totalInfected initalState)
+--   events <- initalizeEvents
+--   putStrLn "Creating Events Map"
+--   let eventsMap = createEventsMap2 events
+--   putStrLn  "Creating Loc Map"
+--   let locMap = createLocMap eventsMap
+--   putStrLn "Running Main flow"
+--   let finalState = mainFlow2 (initalState, eventsMap, locMap, 0)
+--   putStrLn $ "Total Number of Infected: " ++ show (totalInfected finalState)
+--   return ()
 
 mainFuncV3 :: IO ()
 mainFuncV3 = do
